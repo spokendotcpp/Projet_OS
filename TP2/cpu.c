@@ -115,7 +115,7 @@ PSW cpu(PSW m) {
 		}
 		m.RI = decode_instruction(mem[m.PC + m.SB]);
 
-		printf("%d\n", m.RI.OP);
+		printf("N° operation : %d\n", m.RI.OP);
 
 		/*** execution de l'instruction ***/
 		switch (m.RI.OP) {
