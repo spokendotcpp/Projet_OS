@@ -40,7 +40,7 @@ PSW systeme_init_boucle(void) {
 	/*** creation d’un programme ***/
 	make_inst( 0, INST_SUB, R1, R1, 0); /* R1 = 0 */
 	make_inst( 1, INST_SUB, R2, R2, -1000); /* R1 = -1000 */
-	make_inst( 2, INST_SUB, R3, R3, -10); /* R3 = -10 */
+	make_inst( 2, INST_SUB, R3, R3, -5); /* R3 = -10 */
 	make_inst( 3, INST_CMP, R1, R2, 0); /* AC = (R1 - R2) */
 	make_inst( 4, INST_IFGT, 0, 0, 10); /* if (AC > 0) PC = 10 */
 	make_inst( 5, INST_NOP, 0, 0, 0); /* no operation */
@@ -67,7 +67,7 @@ PSW systeme_init_boucle(void) {
 ***********************************************************/
 
 PSW systeme(PSW m) {
-	printf("N° interruption : %d\n", m.IN);
+	printf("xx interruption : %d\n", m.IN);
 
 	switch (m.IN) {
 		case INT_INIT:

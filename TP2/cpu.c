@@ -109,13 +109,13 @@ PSW cpu(PSW m) {
 		/*** lecture et decodage de l'instruction ***/
 		if (m.PC < 0 || m.PC >= m.SS) {
 			m.IN = INT_SEGV;
-			printf("N° interruption - arret : %d\n", m.IN);
+			printf("xx interruption - arret : %d\n", m.IN);
 			exit(-1);
 			//return (m);
 		}
 		m.RI = decode_instruction(mem[m.PC + m.SB]);
 
-		printf("N° operation : %d\n", m.RI.OP);
+		printf("-- instruction : %d\n", m.RI.OP);
 
 		/*** execution de l'instruction ***/
 		switch (m.RI.OP) {
@@ -131,7 +131,7 @@ PSW cpu(PSW m) {
 			default:
 				/*** interruption instruction inconnue ***/
 				m.IN = INT_INST;
-				printf("N° interruption - arret : %d\n", m.IN);
+				printf("xx interruption - arret : %d\n", m.IN);
 				exit(-1);
 				//return (m);
 		}
