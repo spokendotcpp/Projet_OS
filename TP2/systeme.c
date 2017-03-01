@@ -46,7 +46,7 @@ PSW systeme_init_boucle(void) {
 	make_inst( 5, INST_NOP, 0, 0, 0); /* no operation */
 	make_inst( 6, INST_NOP, 0, 0, 0); /* no operation */
 	//make_inst( 7, INST_NOP, 0, 0, 0); /* no operation */
-	make_inst(7, INST_SYSC, 0, 0, 0); /* test sysc interruption */
+	make_inst(7, INST_SYSC, 7, 0, SYSC_PUTI); /* test sysc interruption */
 	make_inst( 8, INST_ADD, R1, R3, 0); /* R1 += R3 */
 	make_inst( 9, INST_JUMP, 0, 0, 3); /* PC = 3 */
 	make_inst(10, INST_HALT, 0, 0, 0); /* HALT */
@@ -88,7 +88,17 @@ PSW systeme(PSW m) {
 			break;
 
 		case INT_SYSC:
+
 			printf("-- INT_SYSC -- \n");
+			if( m.RI.ARG == SYSC_EXIT ){
+				printf("-- SYSTEM_EXIT --\n");
+				exit(0);
+			}
+			else if( m.RI.ARG == SYSC_PUTI ){
+				printf("--> %u\n", m.RI.i);
+			}
+
+
 			break;
 	}
 	return m;

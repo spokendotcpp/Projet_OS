@@ -97,6 +97,19 @@ PSW cpu_SYSC(PSW m) {
 	return m;
 }
 
+/* instruction LOAD */
+PSW cpu_LOAD(PSW m) {
+	m.AC = m.RI.j + m.RI.ARG;
+	if( (m.AC < 0) || (m.AC >= m.SS) ){
+		printf("erreur adressage\n");
+		exit(-1);
+	}
+
+	m.AC = mem[m.SB + m.AC];
+	m.RI.i = m.AC;
+	m.PC += 1;
+}
+
 
 /**********************************************************
 ** Simulation de la CPU (mode utilisateur)
@@ -127,6 +140,7 @@ PSW cpu(PSW m) {
 			case INST_NOP: m = cpu_NOP(m); break;
 			case INST_HALT: m = cpu_HALT(m); break;
 			case INST_SYSC: return cpu_SYSC(m);
+			case INST_LOAD: m = cpu_LOAD(m); break;
 
 			default:
 				/*** interruption instruction inconnue ***/
