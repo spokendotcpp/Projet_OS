@@ -14,6 +14,7 @@
 #define INT_CLOCK	(4)
 #define INT_SYSC	(5)
 #define INT_LOAD	(6)
+#define INT_STORE   (7)
 
 
 /**********************************************************
@@ -29,10 +30,12 @@
 #define INST_HALT	(6)
 #define INST_SYSC   (7)
 #define INST_LOAD	(8)
+#define INST_STORE  (9)
 
 #define SYSC_EXIT		(0)
 #define SYSC_PUTI 		(1)
 #define SYSC_NEW_THREAD (2)
+#define SYSC_SLEEP		(3)
 
 /**********************************************************
 ** definition d'un mot memoire

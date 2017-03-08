@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "cpu.h"
 #include "systeme.h"
@@ -11,10 +12,12 @@
 
 #define EMPTY         (0)   /* processus non-pret       */
 #define READY         (1)   /* processus pret           */
+#define SLEEP		  (2)   /* processus sleepy			*/
 
 struct {
 	PSW  cpu;               /* mot d'etat du processeur */
 	int  state;             /* etat du processus        */
+	time_t  timestamp;
 } process[MAX_PROCESS];   	/* table des processus      */
 
 int current_process = -1;   /* nu du processus courant  */
@@ -112,6 +115,64 @@ PSW systeme_init_thread(void) {
 	return cpu;
 }
 
+PSW systeme_init_thread_exemple_store(void) {
+	PSW cpu;
+
+	const int R1 = 0, R3 = 1;
+
+	printf("Booting (exemple store).\n");
+
+	/*** Exemple de création d'un thread ***/
+	make_inst( 0, INST_SYSC,  R1, R1, SYSC_NEW_THREAD);  /* créer un thread  */
+	make_inst( 1, INST_IFGT,  0,  0, 4);
+
+	make_inst( 2, INST_ADD, R1, R3, 0); // incrémente
+	//make_inst( 3, INST_STORE, R1, R1, 1);
+
+	make_inst( 3, INST_SUB, R3, R3, R1);
+
+	make_inst( 4, INST_SYSC, R3, 0, SYSC_PUTI);
+	make_inst( 5, INST_SYSC,  0,  0, SYSC_EXIT);
+
+	memset (&cpu, 0, sizeof(cpu));
+
+	cpu.PC = 0;
+	cpu.SB = 0;
+	cpu.SS = 20;
+
+	return cpu;
+}
+
+
+PSW systeme_init_time(void) {
+	PSW cpu;
+	const int R1 = 0, R3 = 0;
+	printf("Booting (avec time).\n");
+
+	make_inst( 0, INST_SYSC, R1, R1, SYSC_NEW_THREAD);
+	make_inst( 1, INST_IFGT, 0, 0, 8);
+
+	make_inst( 2, INST_SUB,   R3, R3, -4);          /* R3 = 4            */
+	make_inst( 3, INST_SYSC,  R3,  0, SYSC_SLEEP);  /* endormir R3 sec.  */
+	make_inst( 4, INST_SYSC,  R3,  0, SYSC_PUTI);   /* afficher R3       */
+	make_inst( 5, INST_SYSC,  R3,  0, SYSC_SLEEP);  /* endormir R3 sec.  */
+	make_inst( 6, INST_SYSC,  R3,  0, SYSC_PUTI);   /* afficher R3       */
+	make_inst( 7, INST_SYSC,   0,  0, SYSC_EXIT);   /* fin du thread     */
+
+	make_inst( 8, INST_IFGT, 0, 0, 9);
+	make_inst( 9, INST_IFGT, 0, 0, 8);
+
+	memset (&cpu, 0, sizeof(cpu));
+
+	cpu.PC = 0;
+	cpu.SB = 0;
+	cpu.SS = 20;
+
+	return cpu;
+}
+
+
+
 PSW ordonnanceur(PSW m){
 	printf("Current process ^^^^ %d\n", current_process);
 
@@ -119,6 +180,11 @@ PSW ordonnanceur(PSW m){
 
 	do{
 		current_process = (current_process+1) % MAX_PROCESS;
+
+		if( process[current_process].state == SLEEP )
+			if( process[current_process].timestamp >= time(NULL) )
+				process[current_process].state = READY;
+
 	}while( process[current_process].state != READY );
 
 	printf("Current process ---> %d\n", current_process);
@@ -137,7 +203,8 @@ PSW systeme(PSW m) {
 	switch (m.IN) {
 		case INT_INIT:
 			current_process = 0;
-			process[current_process].cpu = systeme_init_thread(); //systeme_init_boucle();
+			process[current_process].cpu = systeme_init_time();
+			//systeme_init_thread_exemple_store(); //systeme_init_thread(); //systeme_init_boucle();
 			process[current_process].state = READY;
 			m = process[current_process].cpu;
 		break;
@@ -192,6 +259,11 @@ PSW systeme(PSW m) {
 					printf("Child process ---> %d\n", current_process);
 				break;
 
+				case SYSC_SLEEP:
+					printf("xx SLEEP\n");
+					process[current_process].state = SLEEP;
+					process[current_process].timestamp = time(NULL) + m.RI.i;
+				break;
 			}
 		break;
 	}

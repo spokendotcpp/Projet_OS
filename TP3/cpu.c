@@ -81,8 +81,6 @@ PSW cpu_CMP(PSW m) {
 
 /* instruction de IFGT */
 PSW cpu_IFGT(PSW m) {
-	printf("%d\n", m.AC);
-
 	if( m.AC > 0 ) m.PC = m.RI.ARG;
 	else m.PC += 1;
 	return m;
@@ -127,6 +125,21 @@ PSW cpu_LOAD(PSW m) {
 	return m;
 }
 
+/* instruction STORE */
+PSW cpu_STORE(PSW m){
+	m.AC = m.RI.j + m.RI.ARG;
+	if( (m.AC < 0) || (m.AC >= m.SS) ){
+		printf("erreur adressage\n");
+		exit(-1);
+	}
+
+	mem[m.SB + m.AC] = m.RI.i;
+	m.AC = m.RI.i;
+	m.PC+=1;
+
+	return m;
+}
+
 
 /**********************************************************
 ** Simulation de la CPU (mode utilisateur)
@@ -134,10 +147,10 @@ PSW cpu_LOAD(PSW m) {
 
 PSW cpu(PSW m) {
 
-	printf(">>>> CPU >>>> %d\n", m.PC);
+	printf(">>>> CPU >>>> \n");
 
-	int i;
-	for(i=0; i < 3; ++i){
+	/*int i;
+	for(i=0; i < 3; ++i){*/
 		//debugCPU(m);
 		/*** lecture et decodage de l'instruction ***/
 		if (m.PC < 0 || m.PC >= m.SS) {
@@ -161,6 +174,7 @@ PSW cpu(PSW m) {
 			case INST_HALT: m = cpu_HALT(m); break;
 			case INST_SYSC: return cpu_SYSC(m);
 			case INST_LOAD: m = cpu_LOAD(m); break;
+			case INST_STORE: m = cpu_STORE(m); break;
 
 			default:
 				/*** interruption instruction inconnue ***/
@@ -171,7 +185,7 @@ PSW cpu(PSW m) {
 
 		/*** interruption apres chaque instruction ***/
 		//m.IN = INT_TRACE;
-	}
+	//}
 
 	m.IN = INT_CLOCK;
 	return m;
