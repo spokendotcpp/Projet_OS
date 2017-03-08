@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #include "cpu.h"
 
 /**********************************************************
@@ -67,6 +66,8 @@ PSW cpu_CMP(PSW m) {
 
 /* instruction de IFGT */
 PSW cpu_IFGT(PSW m) {
+	printf("%d\n", m.AC);
+
 	if( m.AC > 0 ) m.PC = m.RI.ARG;
 	else m.PC += 1;
 	return m;
@@ -118,6 +119,8 @@ PSW cpu_LOAD(PSW m) {
 
 PSW cpu(PSW m) {
 
+	printf(">>>> CPU >>>>\n");
+
 	for(int i=0; i < 3; ++i){
 
 		/*** lecture et decodage de l'instruction ***/
@@ -129,7 +132,7 @@ PSW cpu(PSW m) {
 		}
 		m.RI = decode_instruction(mem[m.PC + m.SB]);
 
-		printf("-- instruction : %d  %d\n", m.RI.OP,m.PC);
+		printf("-- code instruction : %d | index instruction: %d\n", m.RI.OP, m.PC);
 
 		/*** execution de l'instruction ***/
 		switch (m.RI.OP) {
@@ -140,7 +143,7 @@ PSW cpu(PSW m) {
 			case INST_JUMP: m = cpu_JUMP(m); break;
 			case INST_NOP: m = cpu_NOP(m); break;
 			case INST_HALT: m = cpu_HALT(m); break;
-			case INST_SYSC: printf("coucou\n"); return cpu_SYSC(m);
+			case INST_SYSC: return cpu_SYSC(m);
 			case INST_LOAD: m = cpu_LOAD(m); break;
 
 			default:
@@ -157,5 +160,4 @@ PSW cpu(PSW m) {
 
 	m.IN = INT_CLOCK;
 	return m;
-
 }

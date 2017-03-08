@@ -7,6 +7,20 @@
 #include "systeme.h"
 
 
+#define MAX_PROCESS  (20)   /* nb maximum de processus  */
+
+#define EMPTY         (0)   /* processus non-pret       */
+#define READY         (1)   /* processus pret           */
+
+struct {
+	PSW  cpu;               /* mot d'etat du processeur */
+	int  state;             /* etat du processus        */
+} process[MAX_PROCESS];   	/* table des processus      */
+
+int current_process = -1;   /* nu du processus courant  */
+
+
+
 /**********************************************************
 ** Demarrage du systeme
 ***********************************************************/
@@ -64,7 +78,7 @@ PSW systeme_init_boucle(void) {
 PSW systeme_init_thread(void) {
 	PSW cpu;
 
-	int R1 = 1, R3 = 1;
+	const int R1 = 0, R3 = 0;
 
 	printf("Booting (avec thread).\n");
 
@@ -87,7 +101,7 @@ PSW systeme_init_thread(void) {
 	make_inst(11, INST_SYSC,  R3,  0, SYSC_PUTI);       /* afficher R3   */
 	make_inst(12, INST_SYSC,   0,  0, SYSC_EXIT);       /* fin du thread */
 
-	/*** valeur initiale du PSW ***/
+
 	memset (&cpu, 0, sizeof(cpu));
 
 	cpu.PC = 0;
@@ -96,8 +110,6 @@ PSW systeme_init_thread(void) {
 
 	return cpu;
 }
-
-
 
 PSW ordonnanceur(PSW m){
 	printf("Current process ^^^^ %d\n", current_process);
@@ -113,72 +125,73 @@ PSW ordonnanceur(PSW m){
 	return process[current_process].cpu;
 }
 
-
 /**********************************************************
 ** Simulation du systeme (mode systeme)
 ***********************************************************/
 
 PSW systeme(PSW m) {
-	printf("xx interruption : %d\n", m.IN);
+	printf(">>>> SYSTEM >>>>\n");
+	printf("xx code interruption : %d\n", m.IN);
 
 	switch (m.IN) {
 		case INT_INIT:
-
 			current_process = 0;
 			process[current_process].cpu = systeme_init_thread(); //systeme_init_boucle();
 			process[current_process].state = READY;
-
-			/*current_process = 1;
-			process[current_process].cpu = systeme_init_thread(); //systeme_init_boucle();
-			process[current_process].state = READY;*/
-
-			//return process[current_process].cpu;
-			//current_process = 0;
-			break;
+		break;
 
 		case INT_SEGV:
-			break;
+		break;
 
 		case INT_TRACE:
 			printf("Registre PC : %d\n", m.PC);
 			for(int i=0; i < 8; ++i)
 				printf("Registre DR n° %d : %d\n", i, m.DR[i]);
-			break;
+		break;
 
 		case INT_INST:
-			break;
+		break;
 
 		case INT_CLOCK:
-			//printf("-- INT_CLOCK -- \n");
-			return ordonnanceur(m);
-
-		//break;
+			printf("xx INT_CLOCK\n");
+		return ordonnanceur(m);
 
 		case INT_SYSC:
-			printf("-- INT_SYSC %d-- \n", m.RI.ARG);
-			if( m.RI.ARG == SYSC_EXIT ){
-				printf("-- SYSTEM_EXIT --\n");
-				exit(0);
+			printf("xx INT_SYSC\n");
+
+			switch( m.RI.ARG ){
+
+				case SYSC_EXIT:
+					printf("xx SYSTEM_EXIT\n");
+					//process[current_process].state = EMPTY;
+					exit(0);
+				break;
+
+				case SYSC_PUTI:
+					printf("xx PUTI\n");
+					printf("--> Ri : %u\n", m.RI.i);
+				break;
+
+				case SYSC_NEW_THREAD:
+					printf("xx NEW_THREAD\n");
+
+					//Obtention d'un numéro processus
+					current_process = (current_process + 1)%MAX_PROCESS;
+
+					//Processus créé initié à 0
+					process[current_process].cpu = m;
+					process[current_process].cpu.AC = 0;
+					process[current_process].cpu.RI.i = 0;
+					process[current_process].state = READY;
+
+					// Le processus courant récupère l'index du processus créé à l'instant
+					m.AC = current_process;
+					m.RI.i = current_process;
+
+					printf("Child process ---> %d\n", current_process);
+				break;
+
 			}
-			else if( m.RI.ARG == SYSC_PUTI ){
-				printf("-- PUTI --\n");
-				printf("--> Ri : %u\n", m.RI.i);
-			}
-			else if( m.RI.ARG == SYSC_NEW_THREAD ){
-				printf("-- NEW_THREAD --\n");
-				current_process = (current_process + 1)%MAX_PROCESS;
-
-				process[current_process].cpu = m;
-				process[current_process].cpu.AC = 0;
-				process[current_process].cpu.RI.i = 0;
-				process[current_process].state = READY;
-
-				m.AC = current_process;
-				m.RI.i = current_process;
-
-				printf("child process ---> %d\n", current_process);
-			}
-
 		break;
 	}
 	return m;
