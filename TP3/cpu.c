@@ -16,7 +16,8 @@ void debugCPU(PSW cpu){
 	printf("SS : %d\n", cpu.SS);
 	printf("IN : %d\n", cpu.IN);
 
-	for(int i=0; i<8; i++)
+	int i;
+	for(i=0; i<8; i++)
 		printf("DR[%d] : %d\n", i, cpu.DR[i]);
 
 	printf("AC : %d\n", cpu.AC);
@@ -133,9 +134,10 @@ PSW cpu_LOAD(PSW m) {
 
 PSW cpu(PSW m) {
 
-	printf(">>>> CPU >>>>\n");
+	printf(">>>> CPU >>>> %d\n", m.PC);
 
-	for(int i=0; i < 3; ++i){
+	int i;
+	for(i=0; i < 3; ++i){
 		//debugCPU(m);
 		/*** lecture et decodage de l'instruction ***/
 		if (m.PC < 0 || m.PC >= m.SS) {
@@ -165,7 +167,6 @@ PSW cpu(PSW m) {
 				m.IN = INT_INST;
 				printf("xx interruption - arret : %d\n", m.IN);
 				exit(-1);
-				//return (m);
 		}
 
 		/*** interruption apres chaque instruction ***/
