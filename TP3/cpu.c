@@ -10,7 +10,21 @@
 
 WORD mem[128];     /* memoire                       */
 
+void debugCPU(PSW cpu){
+	printf("PC : %d\n", cpu.PC);
+	printf("SB : %d\n", cpu.SB);
+	printf("SS : %d\n", cpu.SS);
+	printf("IN : %d\n", cpu.IN);
 
+	for(int i=0; i<8; i++)
+		printf("DR[%d] : %d\n", i, cpu.DR[i]);
+
+	printf("AC : %d\n", cpu.AC);
+	printf("RI.OP : %d\n", cpu.RI.OP);
+	printf("RI.i : %d\n", cpu.RI.i);
+	printf("RI.j : %d\n", cpu.RI.j);
+	printf("RI.ARG : %d\n", cpu.RI.ARG);
+}
 /**********************************************************
 ** Placer une instruction en memoire
 ***********************************************************/
@@ -122,7 +136,7 @@ PSW cpu(PSW m) {
 	printf(">>>> CPU >>>>\n");
 
 	for(int i=0; i < 3; ++i){
-
+		//debugCPU(m);
 		/*** lecture et decodage de l'instruction ***/
 		if (m.PC < 0 || m.PC >= m.SS) {
 			m.IN = INT_SEGV;

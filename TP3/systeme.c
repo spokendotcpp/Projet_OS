@@ -83,27 +83,28 @@ PSW systeme_init_thread(void) {
 	printf("Booting (avec thread).\n");
 
 	/*** Exemple de création d'un thread ***/
-	make_inst( 0, INST_SYSC,  R1, R1, SYSC_NEW_THREAD);  /* créer un thread  */
-	make_inst( 1, INST_IFGT,   0,  0, 10);               /* le père va en 10 */
+	make_inst( 1, INST_SYSC,  R1, R1, SYSC_NEW_THREAD);  /* créer un thread  */
+	make_inst( 2, INST_IFGT,   0,  0, 11);               /* le père va en 10 */
 
 	/*** code du fils ***/
-	make_inst( 2, INST_SUB,   R3, R3, -1000);            /* R3 = 1000    */
-	make_inst( 3, INST_SYSC,  R3,  0, SYSC_PUTI);        /* afficher R3  */
-	make_inst( 4, INST_NOP,   0,   0, 0);
+	make_inst( 3, INST_SUB,   R3, R3, -1000);            /* R3 = 1000    */
+	make_inst( 4, INST_SYSC,  R3,  0, SYSC_PUTI);        /* afficher R3  */
 	make_inst( 5, INST_NOP,   0,   0, 0);
 	make_inst( 6, INST_NOP,   0,   0, 0);
 	make_inst( 7, INST_NOP,   0,   0, 0);
 	make_inst( 8, INST_NOP,   0,   0, 0);
 	make_inst( 9, INST_NOP,   0,   0, 0);
+	make_inst( 10, INST_NOP,   0,   0, 0);
 
 	/*** code du père ***/
-	make_inst(10, INST_SUB,   R3, R3, -2000);           /* R3 = 2000     */
-	make_inst(11, INST_SYSC,  R3,  0, SYSC_PUTI);       /* afficher R3   */
-	make_inst(12, INST_SYSC,   0,  0, SYSC_EXIT);       /* fin du thread */
+	make_inst(11, INST_SUB,   R3, R3, -2000);           /* R3 = 2000     */
+	make_inst(12, INST_SYSC,  R3,  0, SYSC_PUTI);       /* afficher R3   */
+	make_inst(13, INST_SYSC,   0,  0, SYSC_EXIT);       /* fin du thread */
 
 
 	memset (&cpu, 0, sizeof(cpu));
 
+	cpu.AC = 1;
 	cpu.PC = 0;
 	cpu.SB = 0;
 	cpu.SS = 20;
