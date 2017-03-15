@@ -13,6 +13,7 @@
 #define EMPTY         (0)   /* processus non-pret       */
 #define READY         (1)   /* processus pret           */
 #define SLEEP		  (2)   /* processus sleepy			*/
+#define GETCHAR		  (3)   /* attente de caractere 	*/
 
 struct {
 	PSW  cpu;               /* mot d'etat du processeur */
@@ -22,6 +23,8 @@ struct {
 
 int current_process = -1;   /* nu du processus courant  */
 
+char tampon = '\0';
+int getcharStateProcessus = 0;
 
 
 /**********************************************************
@@ -143,6 +146,28 @@ PSW systeme_init_thread_exemple_store(void) {
 	return cpu;
 }
 
+PSW systeme_getchar(){
+
+	PSW cpu;
+	const int R4 = 0, R3 = 3;
+	printf("Booting (avec getchar).\n");
+	
+	make_inst( 0, INST_SUB, R3, R3, -2); /* R3 = 1 */
+	make_inst( 1, INST_SYSC, R4, 0, SYSC_GETCHAR); /* R4 = getchar() */
+	make_inst( 2, INST_SYSC, R4, 0, SYSC_PUTI); /* puti(R4) */
+	make_inst( 3, INST_SYSC, R3, 0, SYSC_SLEEP); /* sleep(R3) */
+	make_inst( 4, INST_JUMP, 0, 0, 1);
+	
+	
+	memset (&cpu, 0, sizeof(cpu));
+
+	cpu.PC = 0;
+	cpu.SB = 0;
+	cpu.SS = 20;
+
+	return cpu;
+}
+
 
 PSW systeme_init_time(void) {
 	PSW cpu;
@@ -180,6 +205,13 @@ void reveil(){
 	}
 }
 
+void frappe_clavier(){
+	if(process[current_process].state == GETCHAR){
+		process[current_process].state = READY;
+		tampon = 'c';
+	}
+}
+
 PSW ordonnanceur(PSW m){
 	printf("Current process ^^^^ %d\n", current_process);
 
@@ -188,14 +220,18 @@ PSW ordonnanceur(PSW m){
 	do{
 		current_process = (current_process+1) % MAX_PROCESS;
 
-		if( process[current_process].state == SLEEP )
-			if( process[current_process].timestamp >= time(NULL) )
+		if( process[current_process].state == SLEEP ){
+			if( process[current_process].timestamp < time(NULL) )
 				process[current_process].state = READY;
+		}
 
 	}while( process[current_process].state != READY );
 
 	printf("Current process ---> %d\n", current_process);
-
+	printf("tampon vaut : %c\n", tampon);
+	if(tampon == '\0'){
+		process[current_process].state = GETCHAR;
+	}
 	return process[current_process].cpu;
 }
 
@@ -210,7 +246,8 @@ PSW systeme(PSW m) {
 	switch (m.IN) {
 		case INT_INIT:
 			current_process = 0;
-			process[current_process].cpu = systeme_init_time();
+			process[current_process].cpu = systeme_getchar();
+			//process[current_process].cpu = systeme_init_time();
 			//systeme_init_thread_exemple_store(); //systeme_init_thread(); //systeme_init_boucle();
 			process[current_process].state = READY;
 			m = process[current_process].cpu;
@@ -221,7 +258,8 @@ PSW systeme(PSW m) {
 
 		case INT_TRACE:
 			printf("Registre PC : %d\n", m.PC);
-			for(int i=0; i < 8; ++i)
+			int i;
+			for(i=0; i < 8; ++i)
 				printf("Registre DR n° %d : %d\n", i, m.DR[i]);
 		break;
 
@@ -230,7 +268,6 @@ PSW systeme(PSW m) {
 
 		case INT_CLOCK:
 			printf("xx INT_CLOCK\n");
-			reveil();
 		return ordonnanceur(m);
 
 		case INT_SYSC:
@@ -245,7 +282,7 @@ PSW systeme(PSW m) {
 
 				case SYSC_PUTI:
 					printf("xx PUTI\n");
-					printf("--> Ri : %u\n", m.RI.i);
+					printf("--> Ri : %u\n", m.DR[m.RI.i]);
 				break;
 
 				case SYSC_NEW_THREAD:
@@ -270,7 +307,18 @@ PSW systeme(PSW m) {
 				case SYSC_SLEEP:
 					printf("xx SLEEP\n");
 					process[current_process].state = SLEEP;
-					process[current_process].timestamp = time(NULL) + m.RI.i;
+					process[current_process].timestamp = time(NULL) + m.DR[m.RI.i];
+				break;
+				
+				case SYSC_GETCHAR:
+					printf("xx GETCHAR\n");				
+					frappe_clavier();
+					printf("tampon : %c", tampon);
+					m.DR[m.RI.i] = (int)tampon;					
+				break;
+				
+				case SYSC_FORK:
+					
 				break;
 			}
 		break;
