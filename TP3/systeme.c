@@ -172,6 +172,13 @@ PSW systeme_init_time(void) {
 }
 
 
+void reveil(){
+	int i;
+	for(i = 0; i < MAX_PROCESS; ++i){
+		if(process[i].state == SLEEP)
+			process[i].state = READY;
+	}
+}
 
 PSW ordonnanceur(PSW m){
 	printf("Current process ^^^^ %d\n", current_process);
