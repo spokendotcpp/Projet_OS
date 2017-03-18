@@ -8,6 +8,17 @@
 
 
 /**********************************************************
+** Reveille tous les processus endormis
+***********************************************************/
+void reveil(){
+	int i;
+	for(i = 0; i < MAX_PROCESS; ++i){
+		if(process[i].state == SLEEP)
+			process[i].state = READY;
+	}
+}
+
+/**********************************************************
 ** Demarrage du systeme
 ***********************************************************/
 PSW systeme_init(void) {
@@ -99,35 +110,22 @@ PSW systeme_init_thread(void){
     return cpu;
 }
 
-
 /**********************************************************
-** Demarrage du systeme avec création de thread store
+** Demarrage du systeme avec sleep
 ***********************************************************/
-PSW systeme_init_thread_store(void){
+PSW systeme_init_thread_sleepy(void){
 	PSW cpu;
-    const int R1 = 1, R3 = 3;
+    const int R3 = 3;
 
-	printf("Booting (exemple store).\n");
+	printf("Booting (avec sleep).\n");
 
-	/*** Exemple de création d'un thread ***/
-	make_inst( 0, INST_SYSC,  R1, R1, SYSC_NEW_THREAD);  /* créer un thread  */
-	make_inst( 1, INST_IFGT,  0,  0, 4);
-
-	make_inst( 2, INST_ADD, R1, R1, 1); // incrémente
-	make_inst( 3, INST_STORE, R1, R3, 1);
-
-	//make_inst( 4, INST_SUB, R3, R3, R1);
-
-	//make_inst( 5, INST_SYSC, R3, 0, SYSC_PUTI);
-	make_inst( 4, INST_SYSC,  0,  0, SYSC_EXIT);
-
-	memset (&cpu, 0, sizeof(cpu));
-
-	cpu.PC = 0;
-	cpu.SB = 0;
-	cpu.SS = 20;
-
-	return cpu;
+	/*** Exemple d'endormissement d'un thread ***/
+	make_inst( 0, INST_SUB,   R3, R3, -4);          /* R3 = 4            */
+	make_inst( 1, INST_SYSC,  R3,  0, SYSC_SLEEP);  /* endormir R3 sec.  */
+	make_inst( 2, INST_SYSC,  R3,  0, SYSC_PUTI);   /* afficher R3       */
+	make_inst( 3, INST_SYSC,  R3,  0, SYSC_SLEEP);  /* endormir R3 sec.  */
+	make_inst( 4, INST_SYSC,  R3,  0, SYSC_PUTI);   /* afficher R3       */
+	make_inst( 5, INST_SYSC,   0,  0, SYSC_EXIT);   /* fin du thread     */
 
 	/*** valeur initiale du PSW ***/
     memset (&cpu, 0, sizeof(cpu));
@@ -157,16 +155,29 @@ PSW ordonnanceur(PSW m){
 
 	printf("PROCESSUS READY :  { %d/%d }\n", nb_READY, MAX_PROCESS);
 	if(nb_READY < 1){
-		//printf("\n/!\\ AUCUN PROCESSUS { READY } /!\\ \n");
-		// Ajouter l'arrêt du programme si aucun état en mode SLEEP
-		// Normalement il y a un process IDLE
-		m.IN = INT_HALT;
-		m = systeme(m);
+
+		nb_READY = 0;
+		for(i=0; i < MAX_PROCESS; ++i){
+			if(process[i].state == SLEEP)
+				++nb_READY;
+		}
+
+		printf("PROCESSUS SLEEP :  { %d/%d }\n", nb_READY, MAX_PROCESS);
+		if(nb_READY < 1){
+			m.IN = INT_HALT;
+			m = systeme(m);
+		}
 	}
 
 	// COEUR de l'ordonnanceur
 	do {
     	current_process = (current_process + 1) % MAX_PROCESS;
+
+		if( process[current_process].state == SLEEP ){
+			if( process[current_process].timestamp < time(NULL) )
+				process[current_process].state = READY;
+		}
+
 	} while (process[current_process].state != READY);
 
 
@@ -196,7 +207,7 @@ PSW systeme(PSW m) {
 				}
 
 				current_process = 0;
-				process[current_process].cpu =	systeme_init_thread_store();
+				process[current_process].cpu =	systeme_init_thread_sleepy();
 												//systeme_init_thread();
 												//systeme_init();
 												//systeme_init_boucle();
@@ -243,7 +254,9 @@ PSW systeme(PSW m) {
 			exit(0);
 		break;
 
-		case INT_CLOCK: return ordonnanceur(m);
+		case INT_CLOCK:
+			reveil(); // Réveil tous les processus endormis
+			return ordonnanceur(m);
 
 		case INT_SYSC:
 			switch(m.RI.ARG){
@@ -280,12 +293,20 @@ PSW systeme(PSW m) {
 					printf("Arret processus :  { %d }\n", current_process);
 					process[current_process].state = EMPTY;
 					m = ordonnanceur(m); // <-- où 'm' = process[current_process].cpu;
-					//m.IN = INT_HALT;
-					//m = systeme(m);
 				break;
 
 				case SYSC_PUTI:
 					printf("{ Ri : %u }\n", m.DR[m.RI.i]);
+				break;
+
+				case SYSC_SLEEP:
+					process[current_process].state = SLEEP;
+					process[current_process].timestamp = time(NULL) + m.DR[m.RI.i];
+
+					printf("Sleep processus :  { %d pour %d secondes }\n",  current_process, m.DR[m.RI.i]);
+
+					m.IN = INT_CLOCK;
+					m = systeme(m);
 				break;
 			}
 		break;

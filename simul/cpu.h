@@ -2,6 +2,7 @@
 #ifndef __CPU_H
 #define __CPU_H
 
+#include <time.h>
 
 /**********************************************************
 ** Codes associes aux interruptions
@@ -37,6 +38,7 @@
 #define SYSC_EXIT		(1)
 #define SYSC_PUTI		(2)
 #define SYSC_NEW_THREAD (3)
+#define SYSC_SLEEP		(4)
 /**********************************************************
 ** definition d'un mot memoire
 ***********************************************************/
@@ -78,10 +80,12 @@ typedef struct PSW {    /* Processor Status Word */
 
 #define EMPTY         (0)   /* processus non-pret       */
 #define READY         (1)   /* processus pret           */
+#define SLEEP		  (2)	/* processus endormi 		*/
 
 struct {
     PSW  cpu;               /* mot d'etat du processeur */
     int  state;             /* etat du processus        */
+	time_t  timestamp;		/* date de réveil			*/
     }
     process[MAX_PROCESS];   /* table des processus      */
 
