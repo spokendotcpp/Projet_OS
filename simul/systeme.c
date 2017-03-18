@@ -47,7 +47,7 @@ PSW systeme_init_boucle(void) {
     make_inst( 5, INST_NOP,   0,  0, 0);     /* no operation        */
     make_inst( 6, INST_NOP,   0,  0, 0);     /* no operation        */
     make_inst( 7, INST_NOP,   0,  0, 0);     /* no operation        */
-	make_inst( 8, INST_SYSC, R1, 0, SYSC_PUTI);
+	make_inst( 8, INST_SYSC, R1, 0, SYSC_EXIT);
     make_inst( 9, INST_ADD,  R1, R3, 0);     /* R1 += R3            */
     make_inst( 10, INST_JUMP,  0,  0, 3);     /* PC = 3              */
     make_inst(11, INST_HALT,  0,  0, 0);     /* HALT                */
@@ -68,14 +68,29 @@ PSW ordonnanceur(PSW m){
 	printf("Ordonnanceur :     { processus courant : %d }\n", current_process);
 	process[current_process].cpu = m;
 
+	// Affichage du nombre de processus READY
+	int i;
+	int nb_READY = 0;
+	for(i=0; i < MAX_PROCESS; ++i){
+		if(process[i].state == READY)
+			++nb_READY;
+	}
+	if(nb_READY < 1){
+		printf("\n/!\\ AUCUN PROCESSUS { READY } /!\\ \n");
+		// Ajouter l'arrêt du programme si aucun état en mode SLEEP
+		// Normalement il y a un process IDLE
+	}
+	else printf("PROCESSUS READY :  { %d/%d }\n", nb_READY, MAX_PROCESS);
+
+	// COEUR de l'ordonnanceur
 	do {
     	current_process = (current_process + 1) % MAX_PROCESS;
 	} while (process[current_process].state != READY);
 
+
 	printf("Fin Ordonnanceur : { processus courant : %d } \n", current_process);
 	return process[current_process].cpu;
 }
-
 
 /**********************************************************
 ** Simulation du systeme (mode systeme)
@@ -85,8 +100,18 @@ PSW systeme(PSW m) {
 	// Affichage à chaque entrée dans le système du code interruption émis par l'instruction cpu executée.
 	printf("\nInterruption [ %d ]\n", m.IN);
 
+	int i; //Itérateur boucle FOR pour m.IN = INT_INIT.
+
 	switch (m.IN) {
 		case INT_INIT:
+				/**
+				* Initialisation d'un premier processus
+				*/
+
+				for(i=0; i < MAX_PROCESS; ++i){
+					process[i].state = EMPTY;
+				}
+
 				current_process = 0;
 				process[current_process].cpu = systeme_init_boucle();
 				process[current_process].state = READY;
@@ -133,9 +158,11 @@ PSW systeme(PSW m) {
 		case INT_SYSC:
 			switch(m.RI.ARG){
 				case SYSC_EXIT:
-					printf("EXIT\n");
-					m.IN = INT_HALT;
-					m = systeme(m);
+					printf("Arret processus :  { %d }\n", current_process);
+					process[current_process].state = EMPTY;
+					m = ordonnanceur(m); // où m = process[current_process].cpu;
+					//m.IN = INT_HALT;
+					//m = systeme(m);
 				break;
 
 				case SYSC_PUTI:
