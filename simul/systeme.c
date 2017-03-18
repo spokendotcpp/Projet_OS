@@ -75,12 +75,13 @@ PSW ordonnanceur(PSW m){
 		if(process[i].state == READY)
 			++nb_READY;
 	}
+
+	printf("PROCESSUS READY :  { %d/%d }\n", nb_READY, MAX_PROCESS);
 	if(nb_READY < 1){
-		printf("\n/!\\ AUCUN PROCESSUS { READY } /!\\ \n");
+		//printf("\n/!\\ AUCUN PROCESSUS { READY } /!\\ \n");
 		// Ajouter l'arrêt du programme si aucun état en mode SLEEP
 		// Normalement il y a un process IDLE
 	}
-	else printf("PROCESSUS READY :  { %d/%d }\n", nb_READY, MAX_PROCESS);
 
 	// COEUR de l'ordonnanceur
 	do {
