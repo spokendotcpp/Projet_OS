@@ -32,6 +32,10 @@
 #define INST_LOAD	(8)
 #define INST_STORE  (9)
 
+/**********************************************************
+** Codes associes aux sous-instructions systemes
+***********************************************************/
+
 #define SYSC_EXIT		(0)
 #define SYSC_PUTI 		(1)
 #define SYSC_NEW_THREAD (2)

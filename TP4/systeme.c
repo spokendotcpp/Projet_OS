@@ -31,6 +31,9 @@ int getChar_NB_PROCESS = 0;
 ** Demarrage du systeme
 ***********************************************************/
 
+/**********************************************************
+** Boucle principale
+***********************************************************/
 PSW systeme_init(void) {
 	PSW cpu;
 
@@ -50,6 +53,9 @@ PSW systeme_init(void) {
 	return cpu;
 }
 
+/**********************************************************
+** Boucle principale avec boucles
+***********************************************************/
 PSW systeme_init_boucle(void) {
     PSW cpu;
     const int R1 = 1, R2 = 2, R3 = 3;
@@ -78,6 +84,9 @@ PSW systeme_init_boucle(void) {
     return cpu;
 }
 
+/**********************************************************
+** Boucle principale avec threads
+***********************************************************/
 PSW systeme_init_thread(void) {
 	PSW cpu;
 
@@ -115,6 +124,9 @@ PSW systeme_init_thread(void) {
 	return cpu;
 }
 
+/**********************************************************
+** Boucle principale pour l'ajout de store
+***********************************************************/
 PSW systeme_init_thread_exemple_store(void) {
 	PSW cpu;
 
@@ -143,6 +155,9 @@ PSW systeme_init_thread_exemple_store(void) {
 	return cpu;
 }
 
+/**********************************************************
+** Boucle principale pour le traitement du tampon
+***********************************************************/
 PSW systeme_getchar(){
 
 	PSW cpu;
@@ -165,6 +180,9 @@ PSW systeme_getchar(){
 	return cpu;
 }
 
+/**********************************************************
+** Boucle principale pour la duplication des processus
+***********************************************************/
 PSW systeme_fork(){
 
 	PSW cpu;
@@ -190,7 +208,9 @@ PSW systeme_fork(){
 	return cpu;
 }
 
-
+/**********************************************************
+** Boucle principale pour les interruptions
+***********************************************************/
 PSW systeme_init_time(void) {
 	PSW cpu;
 	const int R1 = 0, R3 = 0;
@@ -218,7 +238,9 @@ PSW systeme_init_time(void) {
 	return cpu;
 }
 
-
+/**********************************************************
+** Reveille tous les processus endormis
+***********************************************************/
 void reveil(){
 	int i;
 	for(i = 0; i < MAX_PROCESS; ++i){
@@ -227,6 +249,12 @@ void reveil(){
 	}
 }
 
+
+/**********************************************************
+** Simule la frappe au clavier, en mettant une lettre
+** dans le tampon de processus courant s'il est dans l'etat
+** GETCHAR
+***********************************************************/
 void frappe_clavier(){
 	if(process[current_process].state == GETCHAR){
 		process[current_process].state = READY;
@@ -350,8 +378,6 @@ PSW systeme(PSW m) {
 					}
 					else
 						printf("ERROR MAX_PROCESS * m.SS < MEM_SIZE\n");
-
-
 				break;
 			}
 		break;
