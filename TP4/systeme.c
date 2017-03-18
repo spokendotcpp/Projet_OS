@@ -139,7 +139,7 @@ PSW systeme_init_thread_exemple_store(void) {
 	make_inst( 1, INST_IFGT,  0,  0, 4);
 
 	make_inst( 2, INST_ADD, R1, R3, 0); // incrémente
-	//make_inst( 3, INST_STORE, R1, R1, 1);
+	make_inst( 3, INST_STORE, R1, R1, 1);
 
 	make_inst( 3, INST_SUB, R3, R3, R1);
 

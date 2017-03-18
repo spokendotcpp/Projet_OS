@@ -107,7 +107,7 @@ PSW cpu_SYSC(PSW m) {
 ** instruction LOAD : calcul de la taille mémoire alloué à un processus
 ***********************************************************/
 PSW cpu_LOAD(PSW m) {
-	m.AC = m.RI.j + m.RI.ARG;
+	m.AC = m.DR[m.RI.j] + m.RI.ARG;
 
 	if( (m.AC < 0) || (m.AC >= m.SS) ){
 		m.IN = INT_SEGV;
@@ -115,22 +115,25 @@ PSW cpu_LOAD(PSW m) {
 	}
 
 	m.AC = mem[m.SB + m.AC];
-	m.RI.i = m.AC;
+	m.DR[m.RI.i] = m.AC;
 	++m.PC;
 
 	return m;
 }
 
+/***********************************************************
+** instruction STORE : stockage en mémoire d'une certaine valeur
+************************************************************/
 PSW cpu_STORE(PSW m){
-	m.AC = m.RI.j + m.RI.ARG;
+	m.AC = m.DR[m.RI.j] + m.RI.ARG;
 	if( (m.AC < 0) || (m.AC >= m.SS) ){
-		printf("erreur adressage\n");
-		exit(-1);
+		m.IN = INT_SEGV;
+		return m;
 	}
 
-	mem[m.SB + m.AC] = m.RI.i;
-	m.AC = m.RI.i;
-	m.PC+=1;
+	mem[m.SB + m.AC] = m.DR[m.RI.i];
+	m.AC = m.DR[m.RI.i];
+	++m.PC;
 
 	return m;
 }
@@ -156,6 +159,8 @@ PSW cpu(PSW m) {
 			case INST_IFGT: m = cpu_IFGT(m); 	break; 		// If() Go To
 			case INST_NOP: 	m = cpu_NOP(m); 	break;		// Aucune instruction
 			case INST_JUMP: m = cpu_JUMP(m); 	break;		// Jump / Go To
+			case INST_LOAD: m = cpu_LOAD(m);	break;		// Calcul taille mémoire
+			case INST_STORE: m = cpu_STORE(m);  break;		// Sauvegarde dans mémoire
 			case INST_SYSC: return cpu_SYSC(m);
 			case INST_HALT: return cpu_HALT(m);   			// Arrêt simulation
 			default:										// Instruction inconnue

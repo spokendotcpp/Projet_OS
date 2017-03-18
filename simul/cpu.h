@@ -16,6 +16,8 @@
 #define INT_HALT 	(8)
 #define INT_CLOCK 	(9)
 #define INT_SYSC	(10)
+#define INT_LOAD	(11)
+#define INT_STORE 	(12)
 
 
 /**********************************************************
@@ -29,6 +31,8 @@
 #define INST_JUMP 	(5)
 #define INST_HALT	(6)
 #define INST_SYSC	(7)
+#define INST_LOAD	(8)
+#define INST_STORE	(9)
 
 #define SYSC_EXIT		(1)
 #define SYSC_PUTI		(2)

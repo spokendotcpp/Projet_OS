@@ -69,6 +69,8 @@ PSW systeme_init_thread(void){
 	PSW cpu;
     const int R1 = 1, R3 = 3;
 
+	printf("Booting (avec thread).\n");
+
 	/*** Exemple de création d'un thread ***/
 	make_inst( 0, INST_SYSC,  R1, R1, SYSC_NEW_THREAD);  /* créer un thread  */
 	make_inst( 1, INST_IFGT,   0,  0, 10);               /* le père va en 10 */
@@ -87,6 +89,45 @@ PSW systeme_init_thread(void){
 	make_inst(10, INST_SUB,   R3, R3, -2000);           /* R3 = 2000     */
 	make_inst(11, INST_SYSC,  R3,  0, SYSC_PUTI);       /* afficher R3   */
 	make_inst(12, INST_SYSC,   0,  0, SYSC_EXIT);       /* fin du thread */
+
+	/*** valeur initiale du PSW ***/
+    memset (&cpu, 0, sizeof(cpu));
+    cpu.PC = 0;
+    cpu.SB = 0;
+    cpu.SS = 20;
+
+    return cpu;
+}
+
+
+/**********************************************************
+** Demarrage du systeme avec création de thread store
+***********************************************************/
+PSW systeme_init_thread_store(void){
+	PSW cpu;
+    const int R1 = 1, R3 = 3;
+
+	printf("Booting (exemple store).\n");
+
+	/*** Exemple de création d'un thread ***/
+	make_inst( 0, INST_SYSC,  R1, R1, SYSC_NEW_THREAD);  /* créer un thread  */
+	make_inst( 1, INST_IFGT,  0,  0, 4);
+
+	make_inst( 2, INST_ADD, R1, R1, 1); // incrémente
+	make_inst( 3, INST_STORE, R1, R3, 1);
+
+	//make_inst( 4, INST_SUB, R3, R3, R1);
+
+	//make_inst( 5, INST_SYSC, R3, 0, SYSC_PUTI);
+	make_inst( 4, INST_SYSC,  0,  0, SYSC_EXIT);
+
+	memset (&cpu, 0, sizeof(cpu));
+
+	cpu.PC = 0;
+	cpu.SB = 0;
+	cpu.SS = 20;
+
+	return cpu;
 
 	/*** valeur initiale du PSW ***/
     memset (&cpu, 0, sizeof(cpu));
@@ -155,7 +196,8 @@ PSW systeme(PSW m) {
 				}
 
 				current_process = 0;
-				process[current_process].cpu =	systeme_init_thread();
+				process[current_process].cpu =	systeme_init_thread_store();
+												//systeme_init_thread();
 												//systeme_init();
 												//systeme_init_boucle();
 
@@ -230,7 +272,7 @@ PSW systeme(PSW m) {
 					m.AC = current_process;
 					m.DR[ m.RI.i ] = current_process;
 
-					// Le thread "père" reprend la main 
+					// Le thread "père" reprend la main
 					current_process = tmp;
 				break;
 
@@ -246,6 +288,18 @@ PSW systeme(PSW m) {
 					printf("{ Ri : %u }\n", m.DR[m.RI.i]);
 				break;
 			}
+		break;
+
+		case INT_LOAD:
+			m.IN = INT_SYSC;
+			m.RI.ARG = SYSC_EXIT;
+			m = systeme(m);
+		break;
+
+		case INT_STORE:
+			m.IN = INT_SYSC;
+			m.RI.ARG = SYSC_PUTI;
+			m = systeme(m);
 		break;
 
 		case INT_INST:
