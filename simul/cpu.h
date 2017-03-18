@@ -30,9 +30,9 @@
 #define INST_HALT	(6)
 #define INST_SYSC	(7)
 
-#define SYSC_EXIT	(8)
-#define SYSC_PUTI	(9)
-
+#define SYSC_EXIT		(1)
+#define SYSC_PUTI		(2)
+#define SYSC_NEW_THREAD (3)
 /**********************************************************
 ** definition d'un mot memoire
 ***********************************************************/

@@ -81,6 +81,8 @@ PSW ordonnanceur(PSW m){
 		//printf("\n/!\\ AUCUN PROCESSUS { READY } /!\\ \n");
 		// Ajouter l'arrêt du programme si aucun état en mode SLEEP
 		// Normalement il y a un process IDLE
+		m.IN = INT_HALT;
+		m = systeme(m);
 	}
 
 	// COEUR de l'ordonnanceur
