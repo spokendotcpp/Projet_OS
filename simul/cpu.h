@@ -6,7 +6,6 @@
 /**********************************************************
 ** Codes associes aux interruptions
 ***********************************************************/
-
 #define INT_INIT	(1)
 #define INT_SEGV	(2)
 #define INT_INST	(3)
@@ -22,7 +21,6 @@
 /**********************************************************
 ** Codes associes aux instructions
 ***********************************************************/
-
 #define INST_ADD	(0)
 #define INST_SUB	(1)
 #define INST_CMP	(2)
@@ -59,7 +57,6 @@ typedef struct {
 /**********************************************************
 ** Le Mot d'Etat du Processeur (PSW)
 ***********************************************************/
-
 typedef struct PSW {    /* Processor Status Word */
 	WORD PC;        /* Program Counter */
 	WORD SB;        /* Segment Base */
@@ -70,18 +67,32 @@ typedef struct PSW {    /* Processor Status Word */
 	INST RI;        /* Registre instruction */
 } PSW;
 
+/**********************************************************
+** Structure permettant de représenter un ensemble de processus et leur mot d'état processeur.
+***********************************************************/
+#define MAX_PROCESS  (20)   /* nb maximum de processus  */
+
+#define EMPTY         (0)   /* processus non-pret       */
+#define READY         (1)   /* processus pret           */
+
+struct {
+    PSW  cpu;               /* mot d'etat du processeur */
+    int  state;             /* etat du processus        */
+    }
+    process[MAX_PROCESS];   /* table des processus      */
+
+int current_process;   		/* nu du processus courant  */
+
 
 /**********************************************************
 ** implanter une instruction en memoire
 ***********************************************************/
-
 void make_inst(int adr, unsigned code, unsigned i, unsigned j, short arg);
 
 
 /**********************************************************
 ** executer un code en mode utilisateur
 ***********************************************************/
-
 PSW cpu(PSW);
 
 

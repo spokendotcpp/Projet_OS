@@ -67,11 +67,16 @@ PSW systeme_init_boucle(void) {
 PSW systeme(PSW m) {
 
 	// Affichage à chaque entrée dans le système du code interruption émis par l'instruction cpu executée.
-	printf("\nInterruption [ %d ]\n", m.IN);
+	printf("Interruption [ %d ]\n", m.IN);
 
 	switch (m.IN) {
-		case INT_INIT: return systeme_init_boucle();
-						//return ( systeme_init() );
+		case INT_INIT:
+				current_process = 0;
+				process[current_process].cpu = systeme_init_boucle();
+				process[current_process].state = READY;
+				m = process[current_process].cpu;
+		break;
+
 		case INT_SEGV:
 			/**
 			* En cas de mauvais adressage mémoire, intéruption de la simulation.
