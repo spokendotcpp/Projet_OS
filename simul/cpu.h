@@ -39,6 +39,8 @@
 #define SYSC_PUTI		(2)
 #define SYSC_NEW_THREAD (3)
 #define SYSC_SLEEP		(4)
+#define SYSC_GETCHAR	(5)
+#define SYSC_FORK		(6)
 /**********************************************************
 ** definition d'un mot memoire
 ***********************************************************/
@@ -81,6 +83,7 @@ typedef struct PSW {    /* Processor Status Word */
 #define EMPTY         (0)   /* processus non-pret       */
 #define READY         (1)   /* processus pret           */
 #define SLEEP		  (2)	/* processus endormi 		*/
+#define GETCHAR		  (3)   /* processus en attente de caractère */
 
 struct {
     PSW  cpu;               /* mot d'etat du processeur */

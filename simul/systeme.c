@@ -6,6 +6,8 @@
 #include "cpu.h"
 #include "systeme.h"
 
+char tampon = '\0';
+int getChar_NB_PROCESS = 0;
 
 /**********************************************************
 ** Reveille tous les processus endormis
@@ -15,6 +17,19 @@ void reveil(){
 	for(i = 0; i < MAX_PROCESS; ++i){
 		if(process[i].state == SLEEP)
 			process[i].state = READY;
+	}
+}
+
+/**********************************************************
+** Simule la frappe au clavier, en mettant une lettre
+** dans le tampon de processus courant s'il est dans l'etat
+** GETCHAR
+***********************************************************/
+void frappe_clavier(){
+	if(process[current_process].state == GETCHAR){
+		process[current_process].state = READY;
+		tampon = 'c';
+		--getChar_NB_PROCESS;
 	}
 }
 
@@ -136,6 +151,58 @@ PSW systeme_init_thread_sleepy(void){
     return cpu;
 }
 
+/**********************************************************
+** Boucle principale pour le traitement du tampon
+***********************************************************/
+PSW systeme_getchar(){
+
+	PSW cpu;
+	const int R4 = 0, R3 = 3;
+	printf("Booting (avec getchar).\n");
+
+	make_inst( 0, INST_SUB, R3, R3, -4); /* R3 = 1 */
+	make_inst( 1, INST_SYSC, R4, 0, SYSC_GETCHAR); /* R4 = getchar() */
+	make_inst( 2, INST_SYSC, R4, 0, SYSC_PUTI); /* puti(R4) */
+	make_inst( 3, INST_SYSC, R3, 0, SYSC_SLEEP); /* sleep(R3) */
+	make_inst( 4, INST_JUMP, 0, 0, 1);
+
+
+	memset (&cpu, 0, sizeof(cpu));
+
+	cpu.PC = 0;
+	cpu.SB = 0;
+	cpu.SS = 20;
+
+	return cpu;
+}
+
+/**********************************************************
+** Boucle principale pour la duplication des processus
+***********************************************************/
+PSW systeme_fork(){
+
+	PSW cpu;
+	const int R4 = 0, R3 = 3;
+	printf("Booting (avec getchar).\n");
+
+	make_inst( 0, INST_SUB, R3, R3, -4); /* R3 = 1 */
+	make_inst( 1, INST_SYSC, R4, 0, SYSC_FORK); /* R4 = fork() */
+	make_inst( 3, INST_SYSC, R3, 0, SYSC_SLEEP); /* sleep(R3) */
+
+	make_inst( 4, INST_SYSC, R4, 0, SYSC_PUTI);	/* affichage R4 */
+	make_inst( 5, INST_SYSC, R4, 0, SYSC_PUTI); /* affichage R4 */
+
+
+	make_inst( 6, INST_JUMP, 0, 0, 1);
+
+	memset (&cpu, 0, sizeof(cpu));
+
+	cpu.PC = 0;
+	cpu.SB = 0;
+	cpu.SS = 20;
+
+	return cpu;
+}
 
 
 /**********************************************************
@@ -158,11 +225,18 @@ PSW ordonnanceur(PSW m){
 
 		nb_READY = 0;
 		for(i=0; i < MAX_PROCESS; ++i){
+			if(process[i].state == GETCHAR)
+				++nb_READY;
+		}
+		printf("PROCESSUS GCHAR :  { %d/%d }\n", nb_READY, MAX_PROCESS);
+
+		nb_READY = 0;
+		for(i=0; i < MAX_PROCESS; ++i){
 			if(process[i].state == SLEEP)
 				++nb_READY;
 		}
-
 		printf("PROCESSUS SLEEP :  { %d/%d }\n", nb_READY, MAX_PROCESS);
+
 		if(nb_READY < 1){
 			m.IN = INT_HALT;
 			m = systeme(m);
@@ -180,6 +254,11 @@ PSW ordonnanceur(PSW m){
 
 	} while (process[current_process].state != READY);
 
+
+	if(tampon == '\0'){
+		process[current_process].state = GETCHAR;
+		++getChar_NB_PROCESS;
+	}
 
 	printf("Fin Ordonnanceur : { processus courant : %d } \n", current_process);
 	return process[current_process].cpu;
@@ -207,20 +286,22 @@ PSW systeme(PSW m) {
 				}
 
 				current_process = 0;
-				process[current_process].cpu =	systeme_init_thread_sleepy();
+				process[current_process].cpu =	systeme_fork();
+												//systeme_getchar();
+												//systeme_init_thread_sleepy();
 												//systeme_init_thread();
 												//systeme_init();
 												//systeme_init_boucle();
 
 				process[current_process].state = READY;
 
-				/*
+
 				//Test de l'ordonnanceur avec deux processus identiques
-				current_process = 1;
-				process[current_process].cpu = systeme_init_boucle();
+			/*	current_process = 1;
+				process[current_process].cpu = systeme_getchar();
 				process[current_process].state = READY;
-				current_process = 0;
-				*/
+				current_process = 0; */
+
 
 				m = process[current_process].cpu;
 		break;
@@ -255,7 +336,7 @@ PSW systeme(PSW m) {
 		break;
 
 		case INT_CLOCK:
-			reveil(); // Réveil tous les processus endormis
+			//reveil(); // Réveil tous les processus endormis
 			return ordonnanceur(m);
 
 		case INT_SYSC:
@@ -307,6 +388,31 @@ PSW systeme(PSW m) {
 
 					m.IN = INT_CLOCK;
 					m = systeme(m);
+				break;
+
+				case SYSC_GETCHAR:
+					frappe_clavier();
+					m.DR[m.RI.i] = tampon;
+				break;
+
+				case SYSC_FORK:
+					tmp = current_process;
+
+					if( (MAX_PROCESS * m.SS) <= 1024 ){
+						//Obtention d'un numéro processus
+						for(i=0; i < MAX_PROCESS; ++i){
+							if( process[i].state == EMPTY ){
+								current_process = i;
+								break;
+							}
+						}
+						process[current_process].cpu = m;
+						process[current_process].state = READY;
+
+						printf("fork process : { %d -> %d }\n", tmp, current_process );
+					}
+					else
+						printf("ERROR MAX_PROCESS * m.SS < MEM_SIZE\n");
 				break;
 			}
 		break;
