@@ -24,14 +24,14 @@ struct {
 int current_process = -1;   /* nu du processus courant  */
 
 char tampon = '\0';
-int getcharStateProcessus = 0;
+int getChar_NB_PROCESS = 0;
 
 
 /**********************************************************
 ** Demarrage du systeme
 ***********************************************************/
 
-static PSW systeme_init(void) {
+PSW systeme_init(void) {
 	PSW cpu;
 
 	printf("Booting.\n");
@@ -51,34 +51,31 @@ static PSW systeme_init(void) {
 }
 
 PSW systeme_init_boucle(void) {
-	PSW cpu;
+    PSW cpu;
+    const int R1 = 1, R2 = 2, R3 = 3;
 
-	const int R1 = 1, R2 = 2, R3 = 3;
+    printf("Booting (avec boucle).\n");
 
-	printf("Booting (avec boucle).\n");
+    /*** creation d'un programme ***/
+    make_inst( 0, INST_SUB,  R1, R1, 0);     /* R1 = 0              */
+    make_inst( 1, INST_SUB,  R2, R2, -1000); /* R2 = 1000           */
+    make_inst( 2, INST_SUB,  R3, R3, -5);    /* R3 = 5              */
+    make_inst( 3, INST_CMP,  R1, R2, 0);     /* AC = (R1 - R2)      */
+    make_inst( 4, INST_IFGT,  0,  0, 10);    /* if (AC > 0) PC = 10 */
+    make_inst( 5, INST_NOP,   0,  0, 0);     /* no operation        */
+    make_inst( 6, INST_NOP,   0,  0, 0);     /* no operation        */
+    make_inst( 7, INST_NOP,   0,  0, 0);     /* no operation        */
+    make_inst( 8, INST_ADD,  R1, R3, 0);     /* R1 += R3            */
+    make_inst( 9, INST_JUMP,  0,  0, 3);     /* PC = 3              */
+    make_inst(10, INST_HALT,  0,  0, 0);     /* HALT                */
 
-	/*** creation d’un programme ***/
-	make_inst( 0, INST_SUB, R1, R1, 0); /* R1 = 0 */
-	make_inst( 1, INST_SUB, R2, R2, -1000); /* R1 = -1000 */
-	make_inst( 2, INST_SUB, R3, R3, -5); /* R3 = -10 */
-	make_inst( 3, INST_CMP, R1, R2, 0); /* AC = (R1 - R2) */
-	make_inst( 4, INST_IFGT, 0, 0, 10); /* if (AC > 0) PC = 10 */
-	make_inst( 5, INST_NOP, 0, 0, 0); /* no operation */
-	make_inst( 6, INST_NOP, 0, 0, 0); /* no operation */
-	//make_inst( 7, INST_NOP, 0, 0, 0); /* no operation */
-	make_inst(7, INST_SYSC, 7, 0, SYSC_PUTI); /* test sysc interruption */
-	make_inst( 8, INST_ADD, R1, R3, 0); /* R1 += R3 */
-	make_inst( 9, INST_JUMP, 0, 0, 3); /* PC = 3 */
-	make_inst(10, INST_HALT, 0, 0, 0); /* HALT */
+    /*** valeur initiale du PSW ***/
+    memset (&cpu, 0, sizeof(cpu));
+    cpu.PC = 0;
+    cpu.SB = 0;
+    cpu.SS = 20;
 
-	/*** valeur initiale du PSW ***/
-	memset (&cpu, 0, sizeof(cpu));
-
-	cpu.PC = 0;
-	cpu.SB = 0;
-	cpu.SS = 20;
-
-	return cpu;
+    return cpu;
 }
 
 PSW systeme_init_thread(void) {
@@ -151,14 +148,40 @@ PSW systeme_getchar(){
 	PSW cpu;
 	const int R4 = 0, R3 = 3;
 	printf("Booting (avec getchar).\n");
-	
-	make_inst( 0, INST_SUB, R3, R3, -2); /* R3 = 1 */
+
+	make_inst( 0, INST_SUB, R3, R3, -4); /* R3 = 1 */
 	make_inst( 1, INST_SYSC, R4, 0, SYSC_GETCHAR); /* R4 = getchar() */
 	make_inst( 2, INST_SYSC, R4, 0, SYSC_PUTI); /* puti(R4) */
 	make_inst( 3, INST_SYSC, R3, 0, SYSC_SLEEP); /* sleep(R3) */
 	make_inst( 4, INST_JUMP, 0, 0, 1);
-	
-	
+
+
+	memset (&cpu, 0, sizeof(cpu));
+
+	cpu.PC = 0;
+	cpu.SB = 0;
+	cpu.SS = 20;
+
+	return cpu;
+}
+
+PSW systeme_fork(){
+
+	PSW cpu;
+	const int R4 = 0, R3 = 3;
+	printf("Booting (avec getchar).\n");
+
+	make_inst( 0, INST_SUB, R3, R3, -4); /* R3 = 1 */
+	make_inst( 1, INST_SYSC, R4, 0, SYSC_FORK); /* R4 = getchar() */
+	make_inst( 3, INST_SYSC, R3, 0, SYSC_SLEEP); /* sleep(R3) */
+
+	make_inst( 4, INST_SYSC, R4, 0, SYSC_PUTI);
+	make_inst( 5, INST_SYSC, R4, 0, SYSC_PUTI);
+
+
+
+	make_inst( 4, INST_JUMP, 0, 0, 1);
+
 	memset (&cpu, 0, sizeof(cpu));
 
 	cpu.PC = 0;
@@ -209,6 +232,7 @@ void frappe_clavier(){
 	if(process[current_process].state == GETCHAR){
 		process[current_process].state = READY;
 		tampon = 'c';
+		--getChar_NB_PROCESS;
 	}
 }
 
@@ -227,11 +251,11 @@ PSW ordonnanceur(PSW m){
 
 	}while( process[current_process].state != READY );
 
-	printf("Current process ---> %d\n", current_process);
-	printf("tampon vaut : %c\n", tampon);
-	if(tampon == '\0'){
+	/*if(tampon == '\0'){
 		process[current_process].state = GETCHAR;
-	}
+		++getChar_NB_PROCESS;
+	}*/
+
 	return process[current_process].cpu;
 }
 
@@ -240,13 +264,13 @@ PSW ordonnanceur(PSW m){
 ***********************************************************/
 
 PSW systeme(PSW m) {
-	printf(">>>> SYSTEM [ %d ] >>>> \n", current_process);
+	printf("\n>>>> SYSTEM [ %d ] >>>> \n", current_process);
 	printf("xx code interruption : %d\n", m.IN);
 
 	switch (m.IN) {
 		case INT_INIT:
 			current_process = 0;
-			process[current_process].cpu = systeme_getchar();
+			process[current_process].cpu = systeme_init_boucle();//systeme_fork(); //systeme_getchar();
 			//process[current_process].cpu = systeme_init_time();
 			//systeme_init_thread_exemple_store(); //systeme_init_thread(); //systeme_init_boucle();
 			process[current_process].state = READY;
@@ -277,7 +301,7 @@ PSW systeme(PSW m) {
 
 				case SYSC_EXIT:
 					printf("xx SYSTEM_EXIT\n");
-					exit(0);
+					process[current_process].state = EMPTY;
 				break;
 
 				case SYSC_PUTI:
@@ -309,16 +333,26 @@ PSW systeme(PSW m) {
 					process[current_process].state = SLEEP;
 					process[current_process].timestamp = time(NULL) + m.DR[m.RI.i];
 				break;
-				
+
 				case SYSC_GETCHAR:
-					printf("xx GETCHAR\n");				
+					printf("xx GETCHAR\n");
 					frappe_clavier();
-					printf("tampon : %c", tampon);
-					m.DR[m.RI.i] = (int)tampon;					
+					m.DR[m.RI.i] = tampon;
 				break;
-				
+
 				case SYSC_FORK:
-					
+					printf("xx FORK\n");
+
+					if( (MAX_PROCESS * m.SS) <= 1024 ){
+						//Obtention d'un numéro processus
+						current_process = (current_process + 1)%MAX_PROCESS;
+						process[current_process].cpu = m;
+						process[current_process].state = READY;
+					}
+					else
+						printf("ERROR MAX_PROCESS * m.SS < MEM_SIZE\n");
+
+
 				break;
 			}
 		break;
