@@ -10,7 +10,6 @@
 /**********************************************************
 ** Demarrage du systeme
 ***********************************************************/
-
 PSW systeme_init(void) {
 	PSW cpu;
 
@@ -30,6 +29,9 @@ PSW systeme_init(void) {
 	return cpu;
 }
 
+/**********************************************************
+** Demarrage du systeme avec boucle
+***********************************************************/
 PSW systeme_init_boucle(void) {
     PSW cpu;
     const int R1 = 1, R2 = 2, R3 = 3;
@@ -59,21 +61,41 @@ PSW systeme_init_boucle(void) {
     return cpu;
 }
 
+/**********************************************************
+** Ordonnanceur
+***********************************************************/
+PSW ordonnanceur(PSW m){
+	printf("Ordonnanceur :     { processus courant : %d }\n", current_process);
+	process[current_process].cpu = m;
+
+	do {
+    	current_process = (current_process + 1) % MAX_PROCESS;
+	} while (process[current_process].state != READY);
+
+	printf("Fin Ordonnanceur : { processus courant : %d } \n", current_process);
+	return process[current_process].cpu;
+}
+
 
 /**********************************************************
 ** Simulation du systeme (mode systeme)
 ***********************************************************/
-
 PSW systeme(PSW m) {
 
 	// Affichage à chaque entrée dans le système du code interruption émis par l'instruction cpu executée.
-	printf("Interruption [ %d ]\n", m.IN);
+	printf("\nInterruption [ %d ]\n", m.IN);
 
 	switch (m.IN) {
 		case INT_INIT:
 				current_process = 0;
 				process[current_process].cpu = systeme_init_boucle();
 				process[current_process].state = READY;
+
+				current_process = 1;
+				process[current_process].cpu = systeme_init_boucle();
+				process[current_process].state = READY;
+
+				current_process = 0;
 				m = process[current_process].cpu;
 		break;
 
@@ -106,7 +128,7 @@ PSW systeme(PSW m) {
 			exit(0);
 		break;
 
-		case INT_CLOCK: break;
+		case INT_CLOCK: return ordonnanceur(m);
 
 		case INT_SYSC:
 			switch(m.RI.ARG){

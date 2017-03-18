@@ -121,26 +121,6 @@ PSW cpu_LOAD(PSW m) {
 	return m;
 }
 
-/*
-PSW cpu_SYSC(PSW m) {
-	m.IN = INT_SYSC;
-	m.PC += 1;
-	return m;
-}
-
-PSW cpu_LOAD(PSW m) {
-	m.AC = m.RI.j + m.RI.ARG;om
-	if( (m.AC < 0) || (m.AC >= m.SS) ){
-		printf("erreur adressage\n");
-		exit(-1);
-	}
-
-	m.AC = mem[m.SB + m.AC];
-	m.RI.i = m.AC;
-	m.PC += 1;
-	return m;
-}
-
 PSW cpu_STORE(PSW m){
 	m.AC = m.RI.j + m.RI.ARG;
 	if( (m.AC < 0) || (m.AC >= m.SS) ){
@@ -155,13 +135,9 @@ PSW cpu_STORE(PSW m){
 	return m;
 }
 
-*/
-
-
 /**********************************************************
 ** Simulation de la CPU (mode utilisateur)
 ***********************************************************/
-
 PSW cpu(PSW m) {
 	int i;
 	for(i=0; i < 3; ++i){
@@ -188,7 +164,7 @@ PSW cpu(PSW m) {
 		}
 
 		/*** interruption apres chaque instruction ***/
-		//m.IN = INT_TRACE;
+		//m.IN = INT_TRACE; // Non nécessaire avec l'instruction CLOCK
 	}
 
 	m.IN = INT_CLOCK;
