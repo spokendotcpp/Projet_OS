@@ -172,12 +172,11 @@ PSW systeme_fork(){
 	printf("Booting (avec getchar).\n");
 
 	make_inst( 0, INST_SUB, R3, R3, -4); /* R3 = 1 */
-	make_inst( 1, INST_SYSC, R4, 0, SYSC_FORK); /* R4 = getchar() */
+	make_inst( 1, INST_SYSC, R4, 0, SYSC_FORK); /* R4 = fork() */
 	make_inst( 3, INST_SYSC, R3, 0, SYSC_SLEEP); /* sleep(R3) */
 
-	make_inst( 4, INST_SYSC, R4, 0, SYSC_PUTI);
-	make_inst( 5, INST_SYSC, R4, 0, SYSC_PUTI);
-
+	make_inst( 4, INST_SYSC, R4, 0, SYSC_PUTI);	/* affichage R4 */
+	make_inst( 5, INST_SYSC, R4, 0, SYSC_PUTI); /* affichage R4 */
 
 
 	make_inst( 4, INST_JUMP, 0, 0, 1);
