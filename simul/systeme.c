@@ -185,15 +185,12 @@ PSW systeme_fork(){
 	const int R4 = 0, R3 = 3;
 	printf("Booting (avec getchar).\n");
 
-	make_inst( 0, INST_SUB, R3, R3, -4); /* R3 = 1 */
+	make_inst( 0, INST_SUB, R3, R3, -4);
 	make_inst( 1, INST_SYSC, R4, 0, SYSC_FORK); /* R4 = fork() */
-	make_inst( 3, INST_SYSC, R3, 0, SYSC_SLEEP); /* sleep(R3) */
-
-	make_inst( 4, INST_SYSC, R4, 0, SYSC_PUTI);	/* affichage R4 */
-	make_inst( 5, INST_SYSC, R4, 0, SYSC_PUTI); /* affichage R4 */
-
-
-	make_inst( 6, INST_JUMP, 0, 0, 1);
+	make_inst( 2, INST_SYSC, R3, 0, SYSC_SLEEP);
+	make_inst( 3, INST_SYSC, R4, 0, SYSC_PUTI);
+	make_inst( 4, INST_SYSC, R4, 0, SYSC_PUTI);
+	//make_inst( 5, INST_JUMP, 0, 0, 1);
 
 	memset (&cpu, 0, sizeof(cpu));
 
@@ -254,11 +251,13 @@ PSW ordonnanceur(PSW m){
 
 	} while (process[current_process].state != READY);
 
-
-	if(tampon == '\0'){
+	//
+	// Partie commentée pour tester le FORK
+	//
+	/*if(tampon == '\0'){
 		process[current_process].state = GETCHAR;
 		++getChar_NB_PROCESS;
-	}
+	}*/
 
 	printf("Fin Ordonnanceur : { processus courant : %d } \n", current_process);
 	return process[current_process].cpu;

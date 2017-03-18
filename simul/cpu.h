@@ -47,7 +47,7 @@
 
 typedef int WORD;         /* un mot est un entier 32 bits  */
 
-extern WORD mem[128];     /* memoire                       */
+extern WORD mem[1024];     /* memoire                       */
 
 
 /**********************************************************
