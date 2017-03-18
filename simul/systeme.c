@@ -61,6 +61,44 @@ PSW systeme_init_boucle(void) {
     return cpu;
 }
 
+
+/**********************************************************
+** Demarrage du systeme avec création de thread
+***********************************************************/
+PSW systeme_init_thread(void){
+	PSW cpu;
+    const int R1 = 1, R3 = 3;
+
+	/*** Exemple de création d'un thread ***/
+	make_inst( 0, INST_SYSC,  R1, R1, SYSC_NEW_THREAD);  /* créer un thread  */
+	make_inst( 1, INST_IFGT,   0,  0, 10);               /* le père va en 10 */
+
+	/*** code du fils ***/
+	make_inst( 2, INST_SUB,   R3, R3, -1000);            /* R3 = 1000    */
+	make_inst( 3, INST_SYSC,  R3,  0, SYSC_PUTI);        /* afficher R3  */
+	make_inst( 4, INST_NOP,   0,   0, 0);
+	make_inst( 5, INST_NOP,   0,   0, 0);
+	make_inst( 6, INST_NOP,   0,   0, 0);
+	make_inst( 7, INST_NOP,   0,   0, 0);
+	make_inst( 8, INST_NOP,   0,   0, 0);
+	make_inst( 9, INST_NOP,   0,   0, 0);
+
+	/*** code du père ***/
+	make_inst(10, INST_SUB,   R3, R3, -2000);           /* R3 = 2000     */
+	make_inst(11, INST_SYSC,  R3,  0, SYSC_PUTI);       /* afficher R3   */
+	make_inst(12, INST_SYSC,   0,  0, SYSC_EXIT);       /* fin du thread */
+
+	/*** valeur initiale du PSW ***/
+    memset (&cpu, 0, sizeof(cpu));
+    cpu.PC = 0;
+    cpu.SB = 0;
+    cpu.SS = 20;
+
+    return cpu;
+}
+
+
+
 /**********************************************************
 ** Ordonnanceur
 ***********************************************************/
@@ -103,7 +141,8 @@ PSW systeme(PSW m) {
 	// Affichage à chaque entrée dans le système du code interruption émis par l'instruction cpu executée.
 	printf("\nInterruption [ %d ]\n", m.IN);
 
-	int i; //Itérateur boucle FOR pour m.IN = INT_INIT.
+	int i; //Itérateur boucle FOR
+	int tmp;
 
 	switch (m.IN) {
 		case INT_INIT:
@@ -116,14 +155,20 @@ PSW systeme(PSW m) {
 				}
 
 				current_process = 0;
-				process[current_process].cpu = systeme_init_boucle();
+				process[current_process].cpu =	systeme_init_thread();
+												//systeme_init();
+												//systeme_init_boucle();
+
 				process[current_process].state = READY;
 
+				/*
+				//Test de l'ordonnanceur avec deux processus identiques
 				current_process = 1;
 				process[current_process].cpu = systeme_init_boucle();
 				process[current_process].state = READY;
-
 				current_process = 0;
+				*/
+
 				m = process[current_process].cpu;
 		break;
 
@@ -160,10 +205,39 @@ PSW systeme(PSW m) {
 
 		case INT_SYSC:
 			switch(m.RI.ARG){
+				case SYSC_NEW_THREAD:
+
+					// Sauvegarde du numéro de thread courrant pour la suite
+					tmp = current_process;
+
+					// Choix d'un nouveau processus vide
+					for(i=0; i < MAX_PROCESS; ++i){
+						if( process[i].state == EMPTY ){
+							current_process = i;
+							break;
+						}
+					}
+
+					printf("Nouveau thread :  { %d }\n", current_process);
+
+					// Initialisation du nouveau thread
+					process[current_process].cpu = m;
+					process[current_process].cpu.AC = 0;
+					process[current_process].cpu.DR[ process[current_process].cpu.RI.i ] = 0;
+					process[current_process].state = READY;
+
+					// Le processus courant récupère l'index du processus créé à l'instant
+					m.AC = current_process;
+					m.DR[ m.RI.i ] = current_process;
+
+					// Le thread "père" reprend la main 
+					current_process = tmp;
+				break;
+
 				case SYSC_EXIT:
 					printf("Arret processus :  { %d }\n", current_process);
 					process[current_process].state = EMPTY;
-					m = ordonnanceur(m); // où m = process[current_process].cpu;
+					m = ordonnanceur(m); // <-- où 'm' = process[current_process].cpu;
 					//m.IN = INT_HALT;
 					//m = systeme(m);
 				break;
